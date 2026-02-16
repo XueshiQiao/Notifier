@@ -188,13 +188,14 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     
     /// Handle Terminal.app tab switching if needed
     private func handleTerminalTabSwitchIfNeeded(app: NSRunningApplication, tty: String?) {
-        guard let bundleID = app.bundleIdentifier,
-              bundleID == "com.apple.Terminal",
-              let tty = tty else {
-            return
-        }
-        
-        switchTerminalTab(toTTY: tty)
+        return; //TODO don't switch tab now.
+//        guard let bundleID = app.bundleIdentifier,
+//              bundleID == "com.apple.Terminal",
+//              let tty = tty else {
+//            return
+//        }
+//        
+//        switchTerminalTab(toTTY: tty)
     }
     
     /// Switch to specific Terminal.app tab by TTY (assumes Terminal is already activated)
