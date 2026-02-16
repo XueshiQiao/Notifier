@@ -83,42 +83,52 @@ struct ContentView: View {
                 Text("Permissions")
                     .font(.headline)
 
-                HStack {
-                    Text("Notifications:")
-                        .fontWeight(.semibold)
-                    Spacer()
-                    if notificationManager.isAuthorized {
-                        Text("Authorized")
-                            .foregroundStyle(.green)
-                    } else {
-                        Button("Grant") {
-                            NSWorkspace.shared.open(
-                                URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!
-                            )
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Notifications:")
+                            .fontWeight(.semibold)
+                        Spacer()
+                        if notificationManager.isAuthorized {
+                            Text("Authorized")
+                                .foregroundStyle(.green)
+                        } else {
+                            Button("Grant") {
+                                NSWorkspace.shared.open(
+                                    URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!
+                                )
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.orange)
+                            .controlSize(.small)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.orange)
-                        .controlSize(.small)
                     }
+                    Text("Post notification on receiving request")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
-                HStack {
-                    Text("Accessibility:")
-                        .fontWeight(.semibold)
-                    Spacer()
-                    if isAccessibilityGranted {
-                        Text("Authorized")
-                            .foregroundStyle(.green)
-                    } else {
-                        Button("Grant") {
-                            NSWorkspace.shared.open(
-                                URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
-                            )
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Accessibility:")
+                            .fontWeight(.semibold)
+                        Spacer()
+                        if isAccessibilityGranted {
+                            Text("Authorized")
+                                .foregroundStyle(.green)
+                        } else {
+                            Button("Grant") {
+                                NSWorkspace.shared.open(
+                                    URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
+                                )
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.orange)
+                            .controlSize(.small)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.orange)
-                        .controlSize(.small)
                     }
+                    Text("Bring minimized windows to front when activating apps.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
             .padding()
