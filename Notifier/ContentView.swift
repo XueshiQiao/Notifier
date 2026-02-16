@@ -103,6 +103,18 @@ struct ContentView: View {
                     }
                     .buttonStyle(.bordered)
                 }
+                
+                // Test Button
+                Button(action: {
+                    Task {
+                        await testNotification()
+                    }
+                }) {
+                    Label("Test Notification", systemImage: "bell.badge.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .tint(.orange)
             }
             
             Divider()
@@ -147,6 +159,24 @@ struct ContentView: View {
         .task {
             // Request notification permission on launch
             await notificationManager.requestAuthorization()
+        }
+    }
+    
+    /// Test notification with sample data
+    private func testNotification() async {
+        let testRequest = NotificationRequest(
+            title: "Test",
+            body: "PID is 58415",
+            subtitle: nil,
+            pid: 58415,
+            tty: "/dev/ttys024"
+        )
+        
+        do {
+            try await notificationManager.postNotification(from: testRequest)
+            print("🧪 Test notification posted successfully")
+        } catch {
+            print("❌ Test notification failed: \(error)")
         }
     }
 }

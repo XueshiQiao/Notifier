@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Network Server: Required for HTTP server on port 8000 -->
+	<key>com.apple.security.network.server</key>
+	<true/>
+	
+	<!-- Network Client: Allow outgoing connections -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	
+	<!-- AppleScript/Apple Events: Control other apps (Terminal, VS Code, etc) -->
+	<key>com.apple.security.automation.apple-events</key>
+	<true/>
+	
+	<!-- Disable App Sandbox: Required for AppleScript to work -->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+</dict>
+</plist>
+
