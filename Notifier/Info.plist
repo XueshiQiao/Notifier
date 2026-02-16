@@ -18,10 +18,6 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.0.0</string>
 	
-	<!-- Privacy Descriptions -->
-	<key>NSAppleEventsUsageDescription</key>
-	<string>Notifier uses AppleScript to activate specific Terminal tabs and other apps when you click notifications.</string>
-	
 	<key>NSUserNotificationAlertStyle</key>
 	<string>alert</string>
 	

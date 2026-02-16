@@ -20,16 +20,11 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     ) {
         let userInfo = response.notification.request.content.userInfo
 
-        // Extract PID and TTY from userInfo
         let pid = userInfo["pid"] as? Int
-        let tty = userInfo["tty"] as? String
 
         if let pid = pid {
             print("📱 Notification clicked - attempting to activate app with PID: \(pid)")
-            if let tty = tty {
-                print("📱 TTY specified: \(tty)")
-            }
-            activateApp(withPID: pid, tty: tty)
+            activateApp(withPID: pid)
         } else {
             print("ℹ️ Notification clicked - no PID provided")
         }
@@ -48,11 +43,11 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     }
     
     /// Activates (brings to front) the application with the given PID
-    private func activateApp(withPID pid: Int, tty: String?) {
+    private func activateApp(withPID pid: Int) {
         let runningApps = NSWorkspace.shared.runningApplications
-        
+
         if let app = findAndActivateApp(forPID: pid_t(pid), in: runningApps, depth: 0, visited: []) {
-            activateApplication(app, originalPID: pid, tty: tty)
+            activateApplication(app, originalPID: pid)
         } else {
             print("❌ No running application found with PID: \(pid) or its parents")
             
@@ -134,7 +129,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     }
     
     /// Actually activate the application
-    private func activateApplication(_ app: NSRunningApplication, originalPID: Int, tty: String?) {
+    private func activateApplication(_ app: NSRunningApplication, originalPID: Int) {
         let appName = app.localizedName ?? "Unknown"
 
         // Unhide the app if it's hidden
@@ -153,7 +148,6 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
             print("⚠️ Activation failed for: \(appName) (PID: \(app.processIdentifier))")
         }
 
-        handleTerminalTabSwitchIfNeeded(app: app, tty: tty)
     }
 
     /// Unminimize all minimized windows for a given PID using Accessibility API
@@ -189,69 +183,4 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
             }
         }
     }
-
-    
-    /// Handle Terminal.app tab switching if needed
-    private func handleTerminalTabSwitchIfNeeded(app: NSRunningApplication, tty: String?) {
-        return; //TODO don't switch tab now.
-//        guard let bundleID = app.bundleIdentifier,
-//              bundleID == "com.apple.Terminal",
-//              let tty = tty else {
-//            return
-//        }
-//        
-//        switchTerminalTab(toTTY: tty)
-    }
-    
-    /// Switch to specific Terminal.app tab by TTY (assumes Terminal is already activated)
-    private func switchTerminalTab(toTTY tty: String) {
-        print("🖥️ Switching to Terminal tab with TTY: \(tty)")
-        
-        // Simplified AppleScript that assumes Terminal is already running and activated
-        let script = """
-        tell application "Terminal"
-            -- 🌟 1. 极其关键：强制唤醒 Terminal 应用，抢夺系统前台焦点！
-            activate
-            repeat with w in windows
-                repeat with t in tabs of w
-                    try
-                        
-                        if tty of t as string is "\(tty)" then
-                            log "🎉 找到目标 Tab，准备拉起！"
-                            
-                            -- 🌟 2. 选中这个特定的 Tab
-                            set selected of t to true
-                            
-                            -- 🌟 3. 兜底策略：如果该窗口被最小化到程序坞了（黄色的减号），把它放出来
-                            if miniaturized of w is true then
-                                set miniaturized of w to false
-                            end if
-                            
-                            -- 🌟 4. 将包含该 Tab 的窗口提到所有 Terminal 窗口的最前面
-                            set index of w to 1
-                            
-                            return "SUCCESS"
-                        end if
-                    on error errMsg
-                        -- 💡 养成好习惯：加上错误捕获，以后代码就不会变“瞎子”了
-                        return "❌ 发生底层报错: " & errMsg
-                    end try
-                end repeat
-            end repeat
-        end tell
-        """
-        
-        var error: NSDictionary?
-        if let scriptObject = NSAppleScript(source: script) {
-            scriptObject.executeAndReturnError(&error)
-            
-            if let error = error {
-                print("⚠️ Terminal tab switch failed: \(error)")
-                print("💡 Make sure Terminal.app has the specified TTY: \(tty)")
-            } else {
-                print("✅ Successfully switched to Terminal tab with TTY: \(tty)")
-            }
-        }
-    }
-    
 }
