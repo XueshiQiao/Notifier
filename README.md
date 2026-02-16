@@ -1,8 +1,6 @@
-# Notifier - HTTP Notification Server
+# Notifier - Never miss a prompt again
 
 A macOS app that routes permission requests from AI agentic code tools to native notifications.
-
-***Never miss a prompt again.***
 
 ## Features
 
@@ -16,18 +14,18 @@ A macOS app that routes permission requests from AI agentic code tools to native
 
 ## Requirements
 
-- user: macOS 13.0 or later
+- macOS 13.0 or later
 
-## Integration with gemini-cli, claude code
+## Integration with Gemini CLI and Claude Code
 
-* for claude code, see [integrate_claude_code.md](docs/integrate_claude_code.md)
-* for gemini-cli, see [integrate_gemini_cli.md](docs/integrate_gemini_cli.md)
+* For Claude Code, see [integrate_claude_code.md](docs/integrate_claude_code.md)
+* For Gemini CLI, see [integrate_gemini_cli.md](docs/integrate_gemini_cli.md)
 
 ## Usage
 
 ### 1. Launch the App
 
-1. Build and run the app in Xcode
+1. Download the app from Release / Build and run the app in Xcode 
 2. The app will request notification permissions on first launch
 3. Click "Start Server" to begin listening for requests
 
