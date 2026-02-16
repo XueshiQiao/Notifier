@@ -179,14 +179,14 @@ struct ContentView: View {
                     .padding(.top, 4)
 
                 ScrollView(.horizontal, showsIndicators: false) {
-                    Text("""
+                    Text(verbatim: """
                     curl -X POST http://localhost:\(server.port.formatted(.number.grouping(.never))) \\
                       -H "Content-Type: application/json" \\
                       -d '{
                         "title": "Build Complete",
                         "body": "Project compiled successfully",
                         "subtitle": "Optional Subtitle",
-                        "pid": 1234
+                        "pid": '"$PPID"'
                       }'
                     """)
                     .font(.system(size: 11))
