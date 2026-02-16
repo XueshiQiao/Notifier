@@ -12,6 +12,9 @@ env:
   PRODUCT_NAME: Notifier
   BUNDLE_ID: me.xueshi.Notifier
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: macos-15
