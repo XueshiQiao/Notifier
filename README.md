@@ -62,7 +62,7 @@ curl -X POST http://localhost:8000 \
   }'
 ```
 
-
+Note: When executing this command in a terminal, use `$PPID` for the pid parameter. While `$PID` would represent the current shell's process (which spawns the curl process), `$PPID` refers to the terminal application itself. Since the curl process terminates after execution, passing the terminal's process ID (`$PPID`) allows Notifier to correctly activate the terminal window when you click the notification banner.
 
 ## Permissions
 
