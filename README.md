@@ -18,6 +18,11 @@ A macOS app that routes permission requests from AI agentic code tools to native
 
 - user: macOS 13.0 or later
 
+## Integration with gemini-cli, claude code
+
+* for claude code, see [integrate_claude_code.md](docs/integrate_claude_code.md)
+* for gemini-cli, see [integrate_gemini_cli.md](docs/integrate_gemini_cli.md)
+
 ## Usage
 
 ### 1. Launch the App
