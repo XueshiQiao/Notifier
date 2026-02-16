@@ -13,6 +13,7 @@ import UserNotifications
 struct ContentView: View {
     @State private var server = HTTPServer()
     @State private var notificationManager = NotificationManager.shared
+    @State private var updateChecker = UpdateChecker.shared
     @State private var isAccessibilityGranted = AXIsProcessTrusted()
     @State private var portString = "8000"
     
@@ -28,6 +29,22 @@ struct ContentView: View {
                 Text("HTTP Notification Server")
                     .font(.title)
                     .fontWeight(.bold)
+
+                if updateChecker.updateAvailable, let version = updateChecker.latestVersion {
+                    Link(destination: URL(string: "https://github.com/XueshiQiao/Notifier/releases/latest")!) {
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(Color.orange)
+                                .frame(width: 8, height: 8)
+                            Text("Update Available: v\(version)")
+                                .font(.caption)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.15))
+                        .cornerRadius(12)
+                    }
+                }
             }
             .padding(.top)
 
@@ -185,6 +202,7 @@ struct ContentView: View {
         .frame(minWidth: 400, idealWidth: 400, minHeight: 500, idealHeight: 500)
         .task {
             await notificationManager.requestAuthorization()
+            await updateChecker.startPeriodicChecks()
         }
         .onReceive(Timer.publish(every: 2, on: .main, in: .common).autoconnect()) { _ in
             isAccessibilityGranted = AXIsProcessTrusted()
