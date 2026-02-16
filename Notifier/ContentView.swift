@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var server = HTTPServer()
     @State private var notificationManager = NotificationManager.shared
     @State private var isAccessibilityGranted = AXIsProcessTrusted()
+    @State private var portString = "8000"
     
     var body: some View {
         VStack(spacing: 16) {
@@ -50,8 +51,17 @@ struct ContentView: View {
                     Text("Port:")
                         .fontWeight(.semibold)
                     Spacer()
-                    Text("\(server.port)")
+                    TextField("Port", text: $portString)
                         .monospaced()
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 80)
+                        .textFieldStyle(.roundedBorder)
+                        .disabled(server.isRunning)
+                        .onChange(of: portString) {
+                            if let p = UInt16(portString) {
+                                server.port = p
+                            }
+                        }
                 }
 
                 if server.isRunning {

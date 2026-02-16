@@ -16,7 +16,7 @@ class HTTPServer {
     private(set) var statusMessage = "Server not started"
     private var connections: [NWConnection] = []
     
-    let port: UInt16 = 8000
+    var port: UInt16 = 8000
     
     /// Start the HTTP server
     func start() {
