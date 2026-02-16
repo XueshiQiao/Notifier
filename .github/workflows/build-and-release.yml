@@ -135,7 +135,7 @@ jobs:
             "$DMG_PATH"
 
           # Sign the DMG
-          codesign --force --sign "Developer ID Application: $(security find-identity -v -p codesigning | grep 'Developer ID Application' | head -1 | sed 's/.*"\(.*\)"/\1/')" "$DMG_PATH"
+          codesign --force --sign "$(security find-identity -v -p codesigning | grep 'Developer ID Application' | head -1 | sed 's/.*"\(.*\)"/\1/')" "$DMG_PATH"
 
       - name: Notarize DMG
         env:
