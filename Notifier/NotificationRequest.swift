@@ -13,6 +13,7 @@ struct NotificationRequest: Codable {
     let body: String
     let subtitle: String?
     let pid: Int?  // Process ID to activate when notification is clicked
+    let tty: String?  // TTY path for Terminal.app tab selection (e.g., "/dev/ttys003")
     
     /// Validates that the required fields are not empty
     var isValid: Bool {

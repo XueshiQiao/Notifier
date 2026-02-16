@@ -50,9 +50,16 @@ class NotificationManager {
             content.subtitle = subtitle
         }
         
-        // Store PID in userInfo if provided
+        // Store PID and TTY in userInfo if provided
+        var userInfo: [String: Any] = [:]
         if let pid = request.pid {
-            content.userInfo = ["pid": pid]
+            userInfo["pid"] = pid
+        }
+        if let tty = request.tty {
+            userInfo["tty"] = tty
+        }
+        if !userInfo.isEmpty {
+            content.userInfo = userInfo
         }
         
         content.sound = .default

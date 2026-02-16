@@ -143,7 +143,7 @@ struct ContentView: View {
             Spacer()
         }
         .padding()
-        .frame(minWidth: 500, minHeight: 600)
+        .frame(minWidth: 400, idealWidth: 400, minHeight: 600, idealHeight: 600)
         .task {
             // Request notification permission on launch
             await notificationManager.requestAuthorization()
