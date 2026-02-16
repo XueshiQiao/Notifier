@@ -7,10 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D4235BD82F423ACF00BA16C6 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = D4235BD72F423ACF00BA16C6 /* README.md */; };
 		D4235BED2F423CC000BA16C6 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = D4235BEC2F423CC000BA16C6 /* .gitignore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		D4235BD72F423ACF00BA16C6 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		D4235BEC2F423CC000BA16C6 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		D4235C012F42D04F00BA16C6 /* Notifier.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Notifier.entitlements; sourceTree = "<group>"; };
 		D4235C072F42D2A200BA16C6 /* Notifier.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Notifier.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -69,6 +71,7 @@
 				D4235BCA2F42393E00BA16C6 /* Products */,
 				D4235BEC2F423CC000BA16C6 /* .gitignore */,
 				D4235C012F42D04F00BA16C6 /* Notifier.entitlements */,
+				D4235BD72F423ACF00BA16C6 /* README.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -147,6 +150,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D4235BED2F423CC000BA16C6 /* .gitignore in Resources */,
+				D4235BD82F423ACF00BA16C6 /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

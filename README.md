@@ -4,7 +4,7 @@ A macOS app that runs an HTTP server on port 8000, receives POST requests, and d
 
 ## Features
 
-- ✅ HTTP server listening on port 8000
+- ✅ HTTP server listening on port 8000 (configurable)
 - ✅ Accepts POST requests with JSON body
 - ✅ Posts macOS system notifications
 - ✅ Simple UI to control server and view status
@@ -41,6 +41,7 @@ Send POST requests to `http://localhost:8000` with a JSON body containing:
 
 **Optional fields:**
 - `subtitle` (String): An optional subtitle
+- `pid` (Int): Process ID to activate when notification is clicked
 
 ### 3. Example Requests
 
@@ -50,9 +51,10 @@ Send POST requests to `http://localhost:8000` with a JSON body containing:
 curl -X POST http://localhost:8000 \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Hello from curl",
-    "body": "This is a test notification",
-    "subtitle": "Testing"
+    "title": "Build Complete",
+    "body": "Project compiled successfully",
+    "subtitle": "Success",
+    "pid": 1234
   }'
 ```
 

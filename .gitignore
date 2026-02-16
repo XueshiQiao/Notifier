@@ -153,3 +153,4 @@ secrets.json
 *.log
 *.tmp
 .cache/
+.claude/settings.local.json

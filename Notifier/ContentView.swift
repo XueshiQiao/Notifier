@@ -168,9 +168,10 @@ struct ContentView: View {
                 Text("Usage")
                     .font(.headline)
 
-                Text("Send a POST request to http://localhost:\(server.port)")
+                Text("Send a POST request to http://localhost:\(server.port.formatted(.number.grouping(.never)))")
                     .font(.caption)
                     .monospaced()
+                    .textSelection(.enabled)
 
                 Text("Example with curl:")
                     .font(.caption)
@@ -179,17 +180,28 @@ struct ContentView: View {
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     Text("""
-                    curl -X POST http://localhost:8000 \\
+                    curl -X POST http://localhost:\(server.port.formatted(.number.grouping(.never))) \\
                       -H "Content-Type: application/json" \\
-                      -d '{"title":"Hello","body":"Test notification","subtitle":"Optional","pid":1234}'
+                      -d '{
+                        "title": "Build Complete",
+                        "body": "Project compiled successfully",
+                        "subtitle": "Optional Subtitle",
+                        "pid": 1234
+                      }'
                     """)
-                    .font(.system(size: 10))
+                    .font(.system(size: 11))
                     .monospaced()
-                    .padding(8)
-                    .background(Color.black.opacity(0.8))
+                    .padding(10)
+                    .fixedSize(horizontal: true, vertical: false)
                     .foregroundStyle(.white)
-                    .cornerRadius(6)
+                    .textSelection(.enabled)
                 }
+                .background(Color.black.opacity(0.8))
+                .cornerRadius(8)
+                
+                Text("Supported fields: title, body, subtitle, pid (activates app)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
