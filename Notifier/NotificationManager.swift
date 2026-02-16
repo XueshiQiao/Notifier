@@ -50,6 +50,11 @@ class NotificationManager {
             content.subtitle = subtitle
         }
         
+        // Store PID in userInfo if provided
+        if let pid = request.pid {
+            content.userInfo = ["pid": pid]
+        }
+        
         content.sound = .default
         
         // Create a request with a unique identifier

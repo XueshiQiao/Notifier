@@ -12,6 +12,7 @@ struct NotificationRequest: Codable {
     let title: String
     let body: String
     let subtitle: String?
+    let pid: Int?  // Process ID to activate when notification is clicked
     
     /// Validates that the required fields are not empty
     var isValid: Bool {

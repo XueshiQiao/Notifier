@@ -125,7 +125,7 @@ struct ContentView: View {
                     Text("""
                     curl -X POST http://localhost:8000 \\
                       -H "Content-Type: application/json" \\
-                      -d '{"title":"Hello","body":"Test notification","subtitle":"Optional"}'
+                      -d '{"title":"Hello","body":"Test notification","subtitle":"Optional","pid":1234}'
                     """)
                     .font(.system(size: 10))
                     .monospaced()

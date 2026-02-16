@@ -6,12 +6,24 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 @main
 struct NotifierApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
     }
 }
+class AppDelegate: NSObject, NSApplicationDelegate {
+    let notificationDelegate = NotificationDelegate()
+    
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Set the notification delegate to handle user interactions
+        UNUserNotificationCenter.current().delegate = notificationDelegate
+    }
+}
+
