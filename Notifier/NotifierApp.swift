@@ -22,7 +22,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let notificationDelegate = NotificationDelegate()
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Set the notification delegate to handle user interactions
         UNUserNotificationCenter.current().delegate = notificationDelegate
     }
 }

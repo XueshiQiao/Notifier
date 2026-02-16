@@ -11,7 +11,7 @@ import AppKit
 
 /// Handles notification interactions and activates apps based on PID
 class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
-    
+
     /// Called when user interacts with a notification
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
@@ -19,11 +19,11 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let userInfo = response.notification.request.content.userInfo
-        
+
         // Extract PID and TTY from userInfo
         let pid = userInfo["pid"] as? Int
         let tty = userInfo["tty"] as? String
-        
+
         if let pid = pid {
             print("📱 Notification clicked - attempting to activate app with PID: \(pid)")
             if let tty = tty {
@@ -33,7 +33,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         } else {
             print("ℹ️ Notification clicked - no PID provided")
         }
-        
+
         completionHandler()
     }
     
@@ -135,56 +135,61 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     
     /// Actually activate the application
     private func activateApplication(_ app: NSRunningApplication, originalPID: Int, tty: String?) {
-        // Strategy 1: Try with activateIgnoringOtherApps (most forceful)
-        if app.activate(options: [.activateIgnoringOtherApps]) {
-            print("✅ Method1: Successfully activated app: \(app.localizedName ?? "Unknown") (PID: \(app.processIdentifier), Original PID: \(originalPID))")
-            handleTerminalTabSwitchIfNeeded(app: app, tty: tty)
-            return
+        let appName = app.localizedName ?? "Unknown"
+
+        // Unhide the app if it's hidden
+        if app.isHidden {
+            app.unhide()
+            print("👁️ Unhid app: \(appName)")
         }
-        
-        // Strategy 2: Try with activateAllWindows
+
+        // Unminimize any minimized windows via Accessibility API
+        unminimizeWindows(forPID: app.processIdentifier)
+
+        // Activate with all windows brought to front
         if app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps]) {
-            print("✅ Method2: Successfully activated app (with all windows): \(app.localizedName ?? "Unknown") (PID: \(app.processIdentifier), Original PID: \(originalPID))")
-            handleTerminalTabSwitchIfNeeded(app: app, tty: tty)
+            print("✅ Successfully activated app: \(appName) (PID: \(app.processIdentifier), Original PID: \(originalPID))")
+        } else {
+            print("⚠️ Activation failed for: \(appName) (PID: \(app.processIdentifier))")
+        }
+
+        handleTerminalTabSwitchIfNeeded(app: app, tty: tty)
+    }
+
+    /// Unminimize all minimized windows for a given PID using Accessibility API
+    private func unminimizeWindows(forPID pid: pid_t) {
+        guard AXIsProcessTrusted() else {
+            print("⚠️ Accessibility permission not granted, skipping unminimize")
             return
         }
-        
-        // Strategy 3: Use NSWorkspace to activate by bundle identifier
-        if let bundleID = app.bundleIdentifier {
-            print("🔄 Method3: Trying to activate via bundle identifier: \(bundleID)")
-            
-            let workspace = NSWorkspace.shared
-            let launchSuccess = workspace.launchApplication(
-                withBundleIdentifier: bundleID,
-                options: [.andHide, .withoutActivation],
-                additionalEventParamDescriptor: nil,
-                launchIdentifier: nil
-            )
-            
-            if launchSuccess {
-                // Now try to activate it
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    _ = app.activate(options: [.activateIgnoringOtherApps])
-                    self.handleTerminalTabSwitchIfNeeded(app: app, tty: tty)
-                }
-                print("✅ Activated app via bundle ID: \(app.localizedName ?? "Unknown")")
-                return
-            }
+
+        let appElement = AXUIElementCreateApplication(pid)
+
+        var windowsRef: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef)
+
+        guard result == .success, let windows = windowsRef as? [AXUIElement] else {
+            print("🔍 Could not retrieve windows via Accessibility API (error: \(result.rawValue))")
+            return
         }
-        
-        // Strategy 4: Use AppleScript as last resort (especially good for VS Code)
-        if let bundleID = app.bundleIdentifier {
-            print("🔄 Trying AppleScript activation for: \(bundleID)")
-            activateViaAppleScript(bundleID: bundleID, appName: app.localizedName ?? "Unknown")
-            
-            // Add delay for AppleScript activation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                self.handleTerminalTabSwitchIfNeeded(app: app, tty: tty)
+
+        for window in windows {
+            var minimizedRef: CFTypeRef?
+            let minResult = AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &minimizedRef)
+
+            if minResult == .success,
+               let isMinimized = (minimizedRef as? NSNumber)?.boolValue,
+               isMinimized {
+                let setResult = AXUIElementSetAttributeValue(window, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
+                if setResult == .success {
+                    print("📤 Unminimized a window")
+                } else {
+                    print("⚠️ Failed to unminimize window (error: \(setResult.rawValue))")
+                }
             }
-        } else {
-            print("⚠️ All activation strategies failed for: \(app.localizedName ?? "Unknown") (PID: \(app.processIdentifier))")
         }
     }
+
     
     /// Handle Terminal.app tab switching if needed
     private func handleTerminalTabSwitchIfNeeded(app: NSRunningApplication, tty: String?) {
@@ -249,23 +254,4 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         }
     }
     
-    /// Activate app using AppleScript (works well for Electron apps like VS Code)
-    private func activateViaAppleScript(bundleID: String, appName: String) {
-        let script = """
-        tell application id "\(bundleID)"
-            activate
-        end tell
-        """
-        
-        var error: NSDictionary?
-        if let scriptObject = NSAppleScript(source: script) {
-            scriptObject.executeAndReturnError(&error)
-            
-            if let error = error {
-                print("⚠️ AppleScript activation failed: \(error)")
-            } else {
-                print("✅ Successfully activated via AppleScript: \(appName)")
-            }
-        }
-    }
 }

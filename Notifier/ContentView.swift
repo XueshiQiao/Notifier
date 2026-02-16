@@ -6,10 +6,14 @@
 //
 
 import SwiftUI
+import AppKit
+import Combine
+import UserNotifications
 
 struct ContentView: View {
     @State private var server = HTTPServer()
     @State private var notificationManager = NotificationManager.shared
+    @State private var isAccessibilityGranted = AXIsProcessTrusted()
     
     var body: some View {
         VStack(spacing: 20) {
@@ -56,6 +60,14 @@ struct ContentView: View {
                     Text(notificationManager.isAuthorized ? "Authorized" : "Not Authorized")
                         .foregroundStyle(notificationManager.isAuthorized ? .green : .orange)
                 }
+
+                HStack {
+                    Text("Accessibility:")
+                        .fontWeight(.semibold)
+                    Spacer()
+                    Text(isAccessibilityGranted ? "Authorized" : "Not Authorized")
+                        .foregroundStyle(isAccessibilityGranted ? .green : .orange)
+                }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Message:")
@@ -94,11 +106,23 @@ struct ContentView: View {
                 
                 if !notificationManager.isAuthorized {
                     Button(action: {
-                        Task {
-                            await notificationManager.requestAuthorization()
-                        }
+                        NSWorkspace.shared.open(
+                            URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!
+                        )
                     }) {
-                        Label("Request Notification Permission", systemImage: "bell.badge")
+                        Label("Grant Notification Permission", systemImage: "bell.badge")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                }
+
+                if !isAccessibilityGranted {
+                    Button(action: {
+                        NSWorkspace.shared.open(
+                            URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
+                        )
+                    }) {
+                        Label("Grant Accessibility Permission", systemImage: "lock.shield")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -157,8 +181,14 @@ struct ContentView: View {
         .padding()
         .frame(minWidth: 400, idealWidth: 400, minHeight: 600, idealHeight: 600)
         .task {
-            // Request notification permission on launch
             await notificationManager.requestAuthorization()
+        }
+        .onReceive(Timer.publish(every: 2, on: .main, in: .common).autoconnect()) { _ in
+            isAccessibilityGranted = AXIsProcessTrusted()
+            Task {
+                let settings = await UNUserNotificationCenter.current().notificationSettings()
+                notificationManager.isAuthorized = settings.authorizationStatus == .authorized
+            }
         }
     }
     
