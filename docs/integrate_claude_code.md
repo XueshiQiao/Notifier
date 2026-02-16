@@ -15,6 +15,17 @@ Add the following hooks to your Claude Code settings file at `~/.claude/settings
 ```json
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Bash|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "INPUT=$(cat) && TOOL=$(echo \"$INPUT\" | jq -r '.tool_name // \"Tool\"') && BODY=$(echo \"$INPUT\" | jq -r 'if .tool_input.file_path then .tool_input.file_path elif .tool_input.command then (.tool_input.command | tostring | .[0:100]) else .tool_name end') && BODY=$(echo \"$BODY\" | sed \"s|$HOME|~|\") && curl -s -o /dev/null -X POST http://localhost:8000 -H 'Content-Type: application/json' -d \"$(jq -n --arg title 'Claude Code' --arg body \"$TOOL: $BODY\" --arg pid \"$PPID\" '{title: $title, body: $body, pid: ($pid | tonumber)}')\""
+          }
+        ]
+      }
+    ],
     "Notification": [
       {
         "matcher": "",
@@ -48,10 +59,13 @@ Restart your Claude Code session for the hooks to take effect.
 
 | Hook | When it fires | Notification |
 |------|--------------|--------------|
-| `Notification` | Claude needs attention (permission prompts, idle prompts, etc.) | Shows the message from Claude |
+| `PreToolUse` | Immediately before a tool runs (Read, Bash, Edit, Write) | Shows the tool name and file path or command |
+| `Notification` | Claude needs attention (idle prompts, etc.) | Shows the message from Claude |
 | `Stop` | Claude finishes responding | "Task finished" |
 
-Both hooks pass the terminal's PID (`$PPID`) to Notifier. When you click a notification, Notifier brings your terminal window to the front — even if it was minimized.
+All hooks pass the terminal's PID (`$PPID`) to Notifier. When you click a notification, Notifier brings your terminal window to the front — even if it was minimized.
+
+> **Note:** The `PreToolUse` hook fires for **every** matched tool call, including auto-approved ones. If notifications are too frequent, narrow the matcher (e.g. just `"Bash"`) or remove it entirely — the `Notification` hook still covers permission prompts after a short delay.
 
 ## Custom Port
 
