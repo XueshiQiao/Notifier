@@ -7,10 +7,12 @@
 
 import Foundation
 import Network
+import os
 
 /// HTTP Server that listens on port 8000 and handles POST requests
 @Observable
 class HTTPServer {
+    private let logger = Logger(subsystem: "me.xueshi.Notifier", category: "HTTPServer")
     private var listener: NWListener?
     private(set) var isRunning = false
     private(set) var statusMessage = "Server not started"
@@ -38,17 +40,17 @@ class HTTPServer {
                 case .ready:
                     self.isRunning = true
                     self.statusMessage = "Server running on port \(self.port)"
-                    print("✅ HTTP Server listening on port \(self.port)")
+                    logger.notice("HTTP Server listening on port \(self.port)")
                     
                 case .failed(let error):
                     self.isRunning = false
                     self.statusMessage = "Server failed: \(error.localizedDescription)"
-                    print("❌ Server failed: \(error)")
+                    logger.notice("Server failed: \(error)")
                     
                 case .cancelled:
                     self.isRunning = false
                     self.statusMessage = "Server stopped"
-                    print("⚠️ Server cancelled")
+                    logger.notice("Server cancelled")
                     
                 default:
                     break
@@ -63,7 +65,7 @@ class HTTPServer {
             
         } catch {
             statusMessage = "Failed to start: \(error.localizedDescription)"
-            print("❌ Failed to start server: \(error)")
+            logger.notice("Failed to start server: \(error)")
         }
     }
     
@@ -102,7 +104,7 @@ class HTTPServer {
             guard let self = self else { return }
             
             if let error = error {
-                print("❌ Receive error: \(error)")
+                logger.notice("Receive error: \(error)")
                 connection.cancel()
                 return
             }
@@ -137,7 +139,13 @@ class HTTPServer {
         }
         
         let method = components[0]
-        
+        let path = components[1]
+
+        logger.notice("\(method) \(path)")
+        if let bodyRange = requestString.range(of: "\r\n\r\n") {
+            logger.notice("Body: \(requestString[bodyRange.upperBound...])")
+        }
+
         // Only accept POST requests
         guard method == "POST" else {
             sendResponse(statusCode: 405, body: "Method Not Allowed. Use POST.", to: connection)
@@ -210,7 +218,7 @@ class HTTPServer {
         
         connection.send(content: responseData, completion: .contentProcessed { error in
             if let error = error {
-                print("❌ Send error: \(error)")
+                self.logger.notice("Send error: \(error)")
             }
             connection.cancel()
         })

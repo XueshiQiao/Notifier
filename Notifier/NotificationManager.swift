@@ -7,15 +7,17 @@
 
 import Foundation
 import UserNotifications
+import os
 
 /// Manages notification permissions and posting
 @MainActor
 @Observable
 class NotificationManager {
     static let shared = NotificationManager()
-    
+    private let logger = Logger(subsystem: "me.xueshi.Notifier", category: "Notification")
+
     var isAuthorized = false
-    
+
     private init() {}
     
     /// Request notification permissions from the user
@@ -26,12 +28,12 @@ class NotificationManager {
             isAuthorized = granted
             
             if granted {
-                print("✅ Notification permission granted")
+                logger.notice("Notification permission granted")
             } else {
-                print("❌ Notification permission denied")
+                logger.notice("Notification permission denied")
             }
         } catch {
-            print("❌ Error requesting notification permission: \(error)")
+            logger.notice("Error requesting notification permission: \(error)")
             isAuthorized = false
         }
     }
@@ -72,7 +74,7 @@ class NotificationManager {
         )
         
         try await UNUserNotificationCenter.current().add(notificationRequest)
-        print("✅ Notification posted: \(request.title)")
+        logger.notice("Notification posted: \(request.title)")
     }
     
     enum NotificationError: LocalizedError {

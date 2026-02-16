@@ -9,6 +9,9 @@ import SwiftUI
 import AppKit
 import Combine
 import UserNotifications
+import os
+
+private let viewLogger = Logger(subsystem: "me.xueshi.Notifier", category: "ContentView")
 
 struct ContentView: View {
     @State private var server = HTTPServer()
@@ -254,6 +257,8 @@ struct ContentView: View {
         }
         .onReceive(Timer.publish(every: 2, on: .main, in: .common).autoconnect()) { _ in
             isAccessibilityGranted = AXIsProcessTrusted()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             Task {
                 let settings = await UNUserNotificationCenter.current().notificationSettings()
                 notificationManager.isAuthorized = settings.authorizationStatus == .authorized
@@ -273,9 +278,9 @@ struct ContentView: View {
         
         do {
             try await notificationManager.postNotification(from: testRequest)
-            print("🧪 Test notification posted successfully")
+            viewLogger.notice("Test notification posted successfully")
         } catch {
-            print("❌ Test notification failed: \(error)")
+            viewLogger.notice("Test notification failed: \(error)")
         }
     }
 }

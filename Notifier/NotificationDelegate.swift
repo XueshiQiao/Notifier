@@ -8,8 +8,11 @@
 import Foundation
 import UserNotifications
 import AppKit
+import os
 
 /// Handles notification interactions and activates apps based on PID
+private let delegateLogger = Logger(subsystem: "me.xueshi.Notifier", category: "NotificationDelegate")
+
 class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
 
     /// Called when user interacts with a notification
@@ -23,10 +26,10 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         let pid = userInfo["pid"] as? Int
 
         if let pid = pid {
-            print("📱 Notification clicked - attempting to activate app with PID: \(pid)")
+            delegateLogger.notice("Notification clicked - attempting to activate app with PID: \(pid)")
             activateApp(withPID: pid)
         } else {
-            print("ℹ️ Notification clicked - no PID provided")
+            delegateLogger.notice("Notification clicked - no PID provided")
         }
 
         completionHandler()
@@ -49,12 +52,12 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         if let app = findAndActivateApp(forPID: pid_t(pid), in: runningApps, depth: 0, visited: []) {
             activateApplication(app, originalPID: pid)
         } else {
-            print("❌ No running application found with PID: \(pid) or its parents")
-            
+            delegateLogger.notice("No running application found with PID: \(pid) or its parents")
+
             // List available PIDs for debugging
-            print("Available PIDs:")
+            delegateLogger.notice("Available PIDs:")
             runningApps.prefix(10).forEach { app in
-                print("  - \(app.localizedName ?? "Unknown"): PID \(app.processIdentifier)")
+                delegateLogger.notice("  - \(app.localizedName ?? "Unknown"): PID \(app.processIdentifier)")
             }
         }
     }
@@ -68,13 +71,13 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     ) -> NSRunningApplication? {
         // Safety: Stop at maximum depth
         guard depth < 20 else {
-            print("⚠️ Reached maximum depth (20) in process tree")
+            delegateLogger.notice("Reached maximum depth (20) in process tree")
             return nil
         }
         
         // Safety: Prevent cycles
         guard !visited.contains(pid) else {
-            print("⚠️ Cycle detected in process tree at PID: \(pid)")
+            delegateLogger.notice("Cycle detected in process tree at PID: \(pid)")
             return nil
         }
         
@@ -83,20 +86,20 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         // Check if current PID is a running application
         if let app = runningApps.first(where: { $0.processIdentifier == pid }) {
             if depth == 0 {
-                print("\(indent)✅ Found app directly: \(app.localizedName ?? "Unknown") (PID: \(pid))")
+                delegateLogger.notice("\(indent)Found app directly: \(app.localizedName ?? "Unknown") (PID: \(pid))")
             } else {
-                print("\(indent)✅ Found parent app: \(app.localizedName ?? "Unknown") (PID: \(pid))")
+                delegateLogger.notice("\(indent)Found parent app: \(app.localizedName ?? "Unknown") (PID: \(pid))")
             }
             return app
         }
         
         // Not found, get parent PID and recurse
         guard let parentPID = getParentPID(of: pid) else {
-            print("\(indent)🔍 Reached top of process tree (no parent for PID: \(pid))")
+            delegateLogger.notice("\(indent)Reached top of process tree (no parent for PID: \(pid))")
             return nil
         }
         
-        print("\(indent)🔍 PID \(pid) → Parent PID \(parentPID)")
+        delegateLogger.notice("\(indent)PID \(pid) → Parent PID \(parentPID)")
         
         // Recurse with parent PID
         var newVisited = visited
@@ -135,7 +138,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         // Unhide the app if it's hidden
         if app.isHidden {
             app.unhide()
-            print("👁️ Unhid app: \(appName)")
+            delegateLogger.notice("Unhid app: \(appName)")
         }
 
         // Unminimize any minimized windows via Accessibility API
@@ -143,9 +146,9 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
 
         // Activate with all windows brought to front
         if app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps]) {
-            print("✅ Successfully activated app: \(appName) (PID: \(app.processIdentifier), Original PID: \(originalPID))")
+            delegateLogger.notice("Successfully activated app: \(appName) (PID: \(app.processIdentifier), Original PID: \(originalPID))")
         } else {
-            print("⚠️ Activation failed for: \(appName) (PID: \(app.processIdentifier))")
+            delegateLogger.notice("Activation failed for: \(appName) (PID: \(app.processIdentifier))")
         }
 
     }
@@ -153,7 +156,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     /// Unminimize all minimized windows for a given PID using Accessibility API
     private func unminimizeWindows(forPID pid: pid_t) {
         guard AXIsProcessTrusted() else {
-            print("⚠️ Accessibility permission not granted, skipping unminimize")
+            delegateLogger.notice("Accessibility permission not granted, skipping unminimize")
             return
         }
 
@@ -163,7 +166,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         let result = AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef)
 
         guard result == .success, let windows = windowsRef as? [AXUIElement] else {
-            print("🔍 Could not retrieve windows via Accessibility API (error: \(result.rawValue))")
+            delegateLogger.notice("Could not retrieve windows via Accessibility API (error: \(result.rawValue))")
             return
         }
 
@@ -176,9 +179,9 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                isMinimized {
                 let setResult = AXUIElementSetAttributeValue(window, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
                 if setResult == .success {
-                    print("📤 Unminimized a window")
+                    delegateLogger.notice("Unminimized a window")
                 } else {
-                    print("⚠️ Failed to unminimize window (error: \(setResult.rawValue))")
+                    delegateLogger.notice("Failed to unminimize window (error: \(setResult.rawValue))")
                 }
             }
         }
