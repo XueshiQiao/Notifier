@@ -197,9 +197,45 @@ struct ContentView: View {
             .cornerRadius(12)
 
             Spacer()
+
+            // Footer
+            VStack(spacing: 6) {
+                HStack(spacing: 4) {
+                    Text("v\(updateChecker.currentVersion)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("·")
+                        .foregroundStyle(.secondary)
+                    Button {
+                        Task { await updateChecker.checkForUpdate() }
+                    } label: {
+                        if updateChecker.isChecking {
+                            ProgressView()
+                                .controlSize(.mini)
+                        } else {
+                            Text("Check for Updates")
+                                .font(.caption)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.blue)
+                    .disabled(updateChecker.isChecking)
+                }
+
+                HStack(spacing: 4) {
+                    Link("GitHub", destination: URL(string: "https://github.com/XueshiQiao/Notifier")!)
+                        .font(.caption)
+                    Text("·")
+                        .foregroundStyle(.secondary)
+                    Text("\u{00A9} 2026 XueshiQiao")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.bottom, 4)
         }
         .padding()
-        .frame(minWidth: 400, idealWidth: 400, minHeight: 500, idealHeight: 500)
+        .frame(minWidth: 400, idealWidth: 400, minHeight: 560, idealHeight: 560)
         .task {
             await notificationManager.requestAuthorization()
             await updateChecker.startPeriodicChecks()

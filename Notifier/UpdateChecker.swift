@@ -12,22 +12,29 @@ class UpdateChecker {
 
     var updateAvailable = false
     var latestVersion: String?
+    var isChecking = false
 
     private let versionURL = URL(string: "https://raw.githubusercontent.com/XueshiQiao/Notifier/main/version.json")!
     private let checkInterval: TimeInterval = 3600 // 1 hour
 
     private init() {}
 
+    var currentVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+    }
+
     func checkForUpdate() async {
+        isChecking = true
+        defer { isChecking = false }
         do {
             let (data, _) = try await URLSession.shared.data(from: versionURL)
             let manifest = try JSONDecoder().decode(VersionManifest.self, from: data)
 
-            let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
-
             if isVersion(manifest.version, newerThan: currentVersion) {
                 latestVersion = manifest.version
                 updateAvailable = true
+            } else {
+                updateAvailable = false
             }
         } catch {
             // Silent failure on network errors
