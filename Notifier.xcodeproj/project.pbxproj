@@ -19,6 +19,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D4235C082F42CBCA00BA16C6 /* Exceptions for "Notifier" folder in "Notifier" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D4235BC82F42393E00BA16C6 /* Notifier */;
+		};
 		D4235BFB2F42CBCA00BA16C6 /* Exceptions for "scripts" folder in "Notifier" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -33,6 +40,9 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		D4235BCB2F42393E00BA16C6 /* Notifier */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D4235C082F42CBCA00BA16C6 /* Exceptions for "Notifier" folder in "Notifier" target */,
+			);
 			path = Notifier;
 			sourceTree = "<group>";
 		};

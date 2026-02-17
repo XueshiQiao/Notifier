@@ -18,6 +18,7 @@ struct NotifierApp: App {
     }
 }
 
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     let notificationDelegate = NotificationDelegate()
     private var statusItem: NSStatusItem?
