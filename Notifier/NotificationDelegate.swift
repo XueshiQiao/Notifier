@@ -28,8 +28,9 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
 
         if let callbackUrl = callbackUrl?.trimmingCharacters(in: .whitespacesAndNewlines), !callbackUrl.isEmpty {
             delegateLogger.notice("Notification clicked - opening callback URL: \(callbackUrl)")
-            openCallbackURL(callbackUrl)
-            completionHandler()
+            openCallbackURL(callbackUrl) { [weak self] in
+                self?.finalizeNotificationInteraction(completionHandler)
+            }
             return
         }
 
@@ -40,7 +41,7 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
             delegateLogger.notice("Notification clicked - no callback URL or PID provided")
         }
 
-        completionHandler()
+        finalizeNotificationInteraction(completionHandler)
     }
     
     /// Called when a notification is delivered while app is in foreground
@@ -162,16 +163,29 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     }
 
     /// Open callback URL directly (used for URL scheme callbacks)
-    private func openCallbackURL(_ callbackUrl: String) {
+    private func openCallbackURL(_ callbackUrl: String, handler: @escaping () -> Void) {
         guard let url = URL(string: callbackUrl) else {
             delegateLogger.notice("Invalid callback URL: \(callbackUrl)")
+            handler()
             return
         }
 
-        if NSWorkspace.shared.open(url) {
-            delegateLogger.notice("Opened callback URL successfully")
-        } else {
-            delegateLogger.notice("Failed to open callback URL")
+        let configuration = NSWorkspace.OpenConfiguration()
+        NSWorkspace.shared.open(url, configuration: configuration) { _, error in
+            if let error = error {
+                delegateLogger.notice("Failed to open callback URL: \(error.localizedDescription)")
+            } else {
+                delegateLogger.notice("Opened callback URL successfully")
+            }
+            handler()
+        }
+    }
+
+    /// Hide Notifier and finish the notification response lifecycle.
+    private func finalizeNotificationInteraction(_ completionHandler: @escaping () -> Void) {
+        DispatchQueue.main.async {
+            NSApp.hide(nil)
+            completionHandler()
         }
     }
 
