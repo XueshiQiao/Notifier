@@ -90,6 +90,7 @@ The Notifier HTTP server accepts POST requests with a JSON body:
   "title": "Notification title",
   "body": "Notification body",
   "subtitle": "Optional subtitle",
+  "callback_url": "myapp://open/somewhere",
   "pid": 12345
 }
 ```
@@ -99,4 +100,5 @@ The Notifier HTTP server accepts POST requests with a JSON body:
 | `title` | string | yes | Notification title |
 | `body` | string | yes | Notification body text |
 | `subtitle` | string | no | Optional subtitle |
-| `pid` | integer | no | PID of the app to activate when notification is clicked |
+| `callback_url` | string | no | URL scheme callback opened directly when notification is clicked (takes priority over `pid`) |
+| `pid` | integer | no | PID of the app to activate when notification is clicked; also used to parse and attach source app icon in notification content |

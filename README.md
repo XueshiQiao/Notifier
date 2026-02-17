@@ -6,6 +6,9 @@ A macOS app that routes permission requests from AI agentic code tools to native
 
 - ✅ ***Native*** experience, built with Swift, SwiftUI
 - ✅ ***Activate the source app*** when clicking the notification banner
+- ✅ Support `callback_url` to open source app directly (takes priority over `pid`)
+- ✅ if `callback_url` was not provided, but `pid` exists, we use `pid` to open the source app instead
+- ✅ Parse source app icon from `pid` and attach it to notification content
 - ✅ Compatible with nearly any terminal, ***Terminal, Ghostty, Tabby*** and others
 - ✅ Compatible with ***Gemini Cli, Claude code***, and any agentic coding tool supports hook
 
@@ -25,7 +28,7 @@ A macOS app that routes permission requests from AI agentic code tools to native
 
 ### 1. Launch the App
 
-1. Download the app from Release / Build and run the app in Xcode 
+1. Download the app from Release / Build and run the app in Xcode
 2. The app will request notification permissions on first launch
 3. Click "Start Server" to begin listening for requests
 
@@ -53,6 +56,8 @@ Send POST requests to `http://localhost:8000` with a JSON body containing:
 - `pid` (Int): ***Process ID to activate when notification is clicked***
 
 If `callback_url` is provided, Notifier opens it directly on click and does not use `pid` activation.
+If `pid` is provided, Notifier also parses the source app icon from that PID and attaches it to the notification content (shown in expanded notification UI).
+
 
 ### 3. Example Requests
 

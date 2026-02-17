@@ -28,20 +28,24 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
 
         if let callbackUrl = callbackUrl?.trimmingCharacters(in: .whitespacesAndNewlines), !callbackUrl.isEmpty {
             delegateLogger.notice("Notification clicked - opening callback URL: \(callbackUrl)")
-            openCallbackURL(callbackUrl) { [weak self] in
-                self?.finalizeNotificationInteraction(completionHandler)
+            DispatchQueue.main.async { [weak self] in
+                self?.openCallbackURL(callbackUrl) {
+                    completionHandler()
+                }
             }
             return
         }
 
         if let pid = pid {
             delegateLogger.notice("Notification clicked - attempting to activate app with PID: \(pid)")
-            activateApp(withPID: pid)
+            DispatchQueue.main.async { [weak self] in
+                self?.activateApp(withPID: pid)
+                completionHandler()
+            }
         } else {
             delegateLogger.notice("Notification clicked - no callback URL or PID provided")
+            completionHandler()
         }
-
-        finalizeNotificationInteraction(completionHandler)
     }
     
     /// Called when a notification is delivered while app is in foreground
@@ -178,14 +182,6 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                 delegateLogger.notice("Opened callback URL successfully")
             }
             handler()
-        }
-    }
-
-    /// Hide Notifier and finish the notification response lifecycle.
-    private func finalizeNotificationInteraction(_ completionHandler: @escaping () -> Void) {
-        DispatchQueue.main.async {
-            NSApp.hide(nil)
-            completionHandler()
         }
     }
 

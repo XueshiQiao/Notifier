@@ -7,6 +7,7 @@
 
 import Foundation
 import UserNotifications
+import AppKit
 import os
 
 /// Manages notification permissions and posting
@@ -66,6 +67,12 @@ class NotificationManager {
         if !userInfo.isEmpty {
             content.userInfo = userInfo
         }
+
+        if let pid = request.pid {
+            if let iconAttachment = createSourceAppIconAttachment(forPID: pid_t(pid)) {
+                content.attachments = [iconAttachment]
+            }
+        }
         
         content.sound = .default
         
@@ -78,6 +85,61 @@ class NotificationManager {
         
         try await UNUserNotificationCenter.current().add(notificationRequest)
         logger.notice("Notification posted: \(request.title)")
+    }
+
+    private func createSourceAppIconAttachment(forPID pid: pid_t) -> UNNotificationAttachment? {
+        guard let app = findRunningApplication(forPID: pid) else {
+            logger.notice("No running app found for PID \(pid); skipping icon attachment")
+            return nil
+        }
+
+        guard let tiffData = app.icon?.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiffData),
+              let pngData = bitmap.representation(using: .png, properties: [:]) else {
+            logger.notice("Failed to convert source app icon to PNG; skipping attachment")
+            return nil
+        }
+
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("source-app-icon-\(UUID().uuidString).png")
+
+        do {
+            try pngData.write(to: fileURL, options: .atomic)
+            return try UNNotificationAttachment(identifier: "source_app_icon", url: fileURL)
+        } catch {
+            logger.notice("Failed to create icon attachment: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func findRunningApplication(forPID pid: pid_t) -> NSRunningApplication? {
+        let runningApps = NSWorkspace.shared.runningApplications
+        var currentPID: pid_t? = pid
+        var visited = Set<pid_t>()
+
+        while let candidatePID = currentPID, candidatePID > 1, !visited.contains(candidatePID) {
+            if let app = runningApps.first(where: { $0.processIdentifier == candidatePID }) {
+                return app
+            }
+            visited.insert(candidatePID)
+            currentPID = parentPID(of: candidatePID)
+        }
+
+        return nil
+    }
+
+    private func parentPID(of pid: pid_t) -> pid_t? {
+        var kinfo = kinfo_proc()
+        var size = MemoryLayout<kinfo_proc>.size
+        var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid]
+
+        let result = sysctl(&mib, u_int(mib.count), &kinfo, &size, nil, 0)
+        guard result == 0 else {
+            return nil
+        }
+
+        let parent = kinfo.kp_eproc.e_ppid
+        return parent > 1 ? parent : nil
     }
     
     enum NotificationError: LocalizedError {
