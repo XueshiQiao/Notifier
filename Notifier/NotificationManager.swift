@@ -52,8 +52,11 @@ class NotificationManager {
             content.subtitle = subtitle
         }
         
-        // Store PID and TTY in userInfo if provided
+        // Store activation metadata in userInfo if provided
         var userInfo: [String: Any] = [:]
+        if let callbackUrl = request.callbackUrl?.trimmingCharacters(in: .whitespacesAndNewlines), !callbackUrl.isEmpty {
+            userInfo["callback_url"] = callbackUrl
+        }
         if let pid = request.pid {
             userInfo["pid"] = pid
         }

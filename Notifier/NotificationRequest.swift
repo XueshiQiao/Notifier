@@ -14,6 +14,16 @@ struct NotificationRequest: Codable {
     let subtitle: String?
     let pid: Int?  // Process ID to activate when notification is clicked
     let tty: String?  // TTY path for Terminal.app tab selection (e.g., "/dev/ttys003")
+    let callbackUrl: String?  // URL scheme callback to open when notification is clicked
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case body
+        case subtitle
+        case pid
+        case tty
+        case callbackUrl = "callback_url"
+    }
     
     /// Validates that the required fields are not empty
     var isValid: Bool {

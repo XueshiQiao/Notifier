@@ -23,13 +23,21 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     ) {
         let userInfo = response.notification.request.content.userInfo
 
+        let callbackUrl = userInfo["callback_url"] as? String
         let pid = userInfo["pid"] as? Int
+
+        if let callbackUrl = callbackUrl?.trimmingCharacters(in: .whitespacesAndNewlines), !callbackUrl.isEmpty {
+            delegateLogger.notice("Notification clicked - opening callback URL: \(callbackUrl)")
+            openCallbackURL(callbackUrl)
+            completionHandler()
+            return
+        }
 
         if let pid = pid {
             delegateLogger.notice("Notification clicked - attempting to activate app with PID: \(pid)")
             activateApp(withPID: pid)
         } else {
-            delegateLogger.notice("Notification clicked - no PID provided")
+            delegateLogger.notice("Notification clicked - no callback URL or PID provided")
         }
 
         completionHandler()
@@ -151,6 +159,20 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
             delegateLogger.notice("Activation failed for: \(appName) (PID: \(app.processIdentifier))")
         }
 
+    }
+
+    /// Open callback URL directly (used for URL scheme callbacks)
+    private func openCallbackURL(_ callbackUrl: String) {
+        guard let url = URL(string: callbackUrl) else {
+            delegateLogger.notice("Invalid callback URL: \(callbackUrl)")
+            return
+        }
+
+        if NSWorkspace.shared.open(url) {
+            delegateLogger.notice("Opened callback URL successfully")
+        } else {
+            delegateLogger.notice("Failed to open callback URL")
+        }
     }
 
     /// Unminimize all minimized windows for a given PID using Accessibility API

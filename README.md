@@ -38,6 +38,7 @@ Send POST requests to `http://localhost:8000` with a JSON body containing:
   "title": "Notification Title",
   "body": "Notification message content",
   "subtitle": "Optional subtitle",
+  "callback_url": "myapp://open/somewhere",
   "pid": 1234
 }
 ```
@@ -48,7 +49,10 @@ Send POST requests to `http://localhost:8000` with a JSON body containing:
 
 **Optional but important fields:**
 - `subtitle` (String): An optional subtitle
+- `callback_url` (String): URL scheme callback to open directly when notification is clicked
 - `pid` (Int): ***Process ID to activate when notification is clicked***
+
+If `callback_url` is provided, Notifier opens it directly on click and does not use `pid` activation.
 
 ### 3. Example Requests
 

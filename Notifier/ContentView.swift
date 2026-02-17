@@ -202,7 +202,7 @@ struct ContentView: View {
                 .background(Color.black.opacity(0.8))
                 .cornerRadius(8)
                 
-                Text("Supported fields: title, body, subtitle, pid (activates app)")
+                Text("Supported fields: title, body, subtitle, callback_url, pid (fallback app activation)")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -273,7 +273,8 @@ struct ContentView: View {
             body: "PID is 58415",
             subtitle: nil,
             pid: 58415,
-            tty: "/dev/ttys024"
+            tty: "/dev/ttys024",
+            callbackUrl: nil
         )
         
         do {
