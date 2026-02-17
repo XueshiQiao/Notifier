@@ -1,5 +1,5 @@
 {
-    "version": "1.1.0",
+    "version": "1.1.1",
     "download_url": "https://github.com/XueshiQiao/Notifier/releases/latest",
-    "release_notes": "Initial release."
+    "release_notes": "Menu bar UX improvements and callback handoff refinements."
 }
