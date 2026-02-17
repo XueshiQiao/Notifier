@@ -12,6 +12,8 @@ import os
 /// HTTP Server that listens on port 8000 and handles POST requests
 @Observable
 class HTTPServer {
+    static let shared = HTTPServer()
+
     private let logger = Logger(subsystem: "me.xueshi.Notifier", category: "HTTPServer")
     private var listener: NWListener?
     private(set) var isRunning = false

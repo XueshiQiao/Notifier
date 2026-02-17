@@ -14,7 +14,7 @@ import os
 private let viewLogger = Logger(subsystem: "me.xueshi.Notifier", category: "ContentView")
 
 struct ContentView: View {
-    @State private var server = HTTPServer()
+    @State private var server = HTTPServer.shared
     @State private var notificationManager = NotificationManager.shared
     @State private var updateChecker = UpdateChecker.shared
     @State private var isAccessibilityGranted = AXIsProcessTrusted()
