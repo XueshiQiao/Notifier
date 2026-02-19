@@ -89,8 +89,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if window == nil {
             let contentView = ContentView()
             let hostingView = NSHostingView(rootView: contentView)
+            hostingView.layoutSubtreeIfNeeded()
+
+            let fittedSize = hostingView.fittingSize
+            let initialWidth = max(420, fittedSize.width)
+            let initialHeight = max(560, fittedSize.height)
+
             let createdWindow = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 866),
+                contentRect: NSRect(x: 0, y: 0, width: initialWidth, height: initialHeight),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered,
                 defer: false
@@ -98,6 +104,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             createdWindow.center()
             createdWindow.title = "Notifier"
             createdWindow.contentView = hostingView
+            createdWindow.contentMinSize = NSSize(width: 400, height: 560)
             createdWindow.isReleasedWhenClosed = false
             createdWindow.collectionBehavior.insert(.moveToActiveSpace)
             window = createdWindow

@@ -25,9 +25,11 @@ struct ContentView: View {
     @State private var pendingPatchTarget: PatchTarget?
     @State private var showIntegrationAlert = false
     @State private var integrationAlertMode: IntegrationAlertMode = .confirmation
+    @State private var isUsageExpanded = false
     
     var body: some View {
-        VStack(spacing: 16) {
+        ScrollView {
+            VStack(spacing: 16) {
             // Header
             VStack(spacing: 8) {
                 Image(systemName: server.isRunning ? "antenna.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
@@ -212,45 +214,62 @@ struct ContentView: View {
 
             // Usage Instructions
             VStack(alignment: .leading, spacing: 8) {
-                Text("Usage")
-                    .font(.headline)
-
-                Text("Send a POST request to http://localhost:\(server.port.formatted(.number.grouping(.never)))")
-                    .font(.caption)
-                    .monospaced()
-                    .textSelection(.enabled)
-
-                Text("Example with curl:")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .padding(.top, 4)
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    Text(verbatim: """
-                    curl -X POST http://localhost:\(server.port.formatted(.number.grouping(.never))) \\
-                      -H "Content-Type: application/json" \\
-                      -d '{
-                        "title": "Build Complete",
-                        "body": "Project compiled successfully",
-                        "subtitle": "Optional Subtitle",
-                        "pid": '"$PPID"'
-                      }'
-                    """)
-                    .font(.system(size: 11))
-                    .monospaced()
-                    .padding(10)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .foregroundStyle(.white)
-                    .textSelection(.enabled)
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        isUsageExpanded.toggle()
+                    }
+                } label: {
+                    HStack {
+                        Text("Usage")
+                            .font(.headline)
+                        Spacer()
+                        Image(systemName: isUsageExpanded ? "chevron.down" : "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
-                .background(Color.black.opacity(0.8))
-                .cornerRadius(8)
-                
-                Text("Supported fields: title, body, subtitle, callback_url, pid (fallback app activation)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                .buttonStyle(.plain)
+
+                if isUsageExpanded {
+                    Text("Send a POST request to http://localhost:\(server.port.formatted(.number.grouping(.never)))")
+                        .font(.caption)
+                        .monospaced()
+                        .textSelection(.enabled)
+
+                    Text("Example with curl:")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .padding(.top, 4)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        Text(verbatim: """
+                        curl -X POST http://localhost:\(server.port.formatted(.number.grouping(.never))) \\
+                          -H "Content-Type: application/json" \\
+                          -d '{
+                            "title": "Build Complete",
+                            "body": "Project compiled successfully",
+                            "subtitle": "Optional Subtitle",
+                            "pid": '"$PPID"'
+                          }'
+                        """)
+                        .font(.system(size: 11))
+                        .monospaced()
+                        .padding(10)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .foregroundStyle(.white)
+                        .textSelection(.enabled)
+                    }
+                    .background(Color.black.opacity(0.8))
+                    .cornerRadius(8)
+
+                    Text("Supported fields: title, body, subtitle, callback_url, pid (fallback app activation)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
-            .frame(maxWidth: .infinity, minHeight: 270, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
             .background(Color.secondary.opacity(0.1))
             .cornerRadius(12)
@@ -290,9 +309,11 @@ struct ContentView: View {
                 }
             }
             .padding(.bottom, 4)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .top)
         }
-        .padding()
-        .frame(minWidth: 400, idealWidth: 400, minHeight: 660, idealHeight: 660)
+        .frame(minWidth: 400, idealWidth: 400)
         .task {
             await notificationManager.requestAuthorization()
             await updateChecker.startPeriodicChecks()
