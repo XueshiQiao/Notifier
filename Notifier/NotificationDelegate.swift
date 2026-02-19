@@ -157,16 +157,12 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         // Unminimize any minimized windows via Accessibility API
         unminimizeWindows(forPID: app.processIdentifier)
 
-        // Activate with all windows brought to front
-        if app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps]) {
-            delegateLogger.notice("Successfully activated app: \(appName) (PID: \(app.processIdentifier), Original PID: \(originalPID))")
-        } else {
-            delegateLogger.notice("Activation failed for: \(appName) (PID: \(app.processIdentifier))")
-        }
-
-        // Explicitly raise and focus non-minimized windows that may still be behind others.
-        raiseAndFocusNonMinimizedWindows(forPID: app.processIdentifier)
-
+        // Ordered activation sequence:
+        // 1) app.activate
+        // 2) wait briefly for run-loop/state propagation
+        // 3) AX app-frontmost + AX window raise/focus
+        // 4) verify and retry once
+        performActivationAttempt(app, appName: appName, originalPID: originalPID, attempt: 1)
     }
 
     /// Open callback URL directly (used for URL scheme callbacks)
@@ -271,5 +267,108 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         } else {
             delegateLogger.notice("No non-minimized windows were raised/focused")
         }
+    }
+
+    /// Attempt to mark the app process itself as frontmost via Accessibility API.
+    private func setAppFrontmostViaAccessibility(forPID pid: pid_t) {
+        guard AXIsProcessTrusted() else {
+            delegateLogger.notice("Accessibility permission not granted, skipping app-frontmost request")
+            return
+        }
+
+        let appElement = AXUIElementCreateApplication(pid)
+        let result = AXUIElementSetAttributeValue(appElement, kAXFrontmostAttribute as CFString, kCFBooleanTrue)
+        if result == .success {
+            delegateLogger.notice("Requested app frontmost via Accessibility API")
+        } else {
+            delegateLogger.notice("Failed to request app frontmost via Accessibility API (error: \(result.rawValue))")
+        }
+    }
+
+    /// Check whether the target app is currently the frontmost app.
+    private func isApplicationFrontmost(_ app: NSRunningApplication) -> Bool {
+        NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier
+    }
+
+    /// Execute one activation attempt, then verify after a short delay and escalate if needed.
+    private func performActivationAttempt(
+        _ app: NSRunningApplication,
+        appName: String,
+        originalPID: Int,
+        attempt: Int
+    ) {
+        let activated = app.activate(options: [.activateAllWindows])
+        if activated {
+            delegateLogger.notice("Activation attempt \(attempt) sent for: \(appName) (PID: \(app.processIdentifier), Original PID: \(originalPID))")
+        } else {
+            delegateLogger.notice("Activation attempt \(attempt) could not be sent for: \(appName) (PID: \(app.processIdentifier), Original PID: \(originalPID))")
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(150)) { [weak self] in
+            guard let self = self else { return }
+
+            if self.isApplicationFrontmost(app) {
+                delegateLogger.notice("App is frontmost after activation attempt \(attempt): \(appName) (PID: \(app.processIdentifier))")
+                return
+            }
+
+            self.setAppFrontmostViaAccessibility(forPID: app.processIdentifier)
+            self.raiseAndFocusNonMinimizedWindows(forPID: app.processIdentifier)
+
+            if self.isApplicationFrontmost(app) {
+                delegateLogger.notice("App became frontmost after AX actions on attempt \(attempt): \(appName) (PID: \(app.processIdentifier))")
+                return
+            }
+
+            if attempt == 1 {
+                delegateLogger.notice("App not frontmost after attempt 1; scheduling attempt 2: \(appName) (PID: \(app.processIdentifier))")
+                self.performActivationAttempt(app, appName: appName, originalPID: originalPID, attempt: 2)
+                return
+            }
+
+            self.fallbackOpenApplication(app, appName: appName)
+        }
+    }
+
+    /// Final fallback: ask LaunchServices/NSWorkspace to (re)open and activate the target app.
+    private func fallbackOpenApplication(_ app: NSRunningApplication, appName: String) {
+        guard let bundleURL = app.bundleURL else {
+            logFrontmostMismatch(for: app, appName: appName, context: "No bundle URL for fallback open")
+            return
+        }
+
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        configuration.promptsUserIfNeeded = false
+
+        delegateLogger.notice("Attempting NSWorkspace fallback open for: \(appName) (PID: \(app.processIdentifier))")
+        NSWorkspace.shared.openApplication(at: bundleURL, configuration: configuration) { [weak self] _, error in
+            guard let self = self else { return }
+            if let error = error {
+                delegateLogger.notice("NSWorkspace fallback open failed for \(appName): \(error.localizedDescription)")
+                self.logFrontmostMismatch(for: app, appName: appName, context: "Fallback open error")
+                return
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(150)) {
+                self.setAppFrontmostViaAccessibility(forPID: app.processIdentifier)
+                self.raiseAndFocusNonMinimizedWindows(forPID: app.processIdentifier)
+
+                if self.isApplicationFrontmost(app) {
+                    delegateLogger.notice("App became frontmost after NSWorkspace fallback: \(appName) (PID: \(app.processIdentifier))")
+                } else {
+                    self.logFrontmostMismatch(for: app, appName: appName, context: "After NSWorkspace fallback")
+                }
+            }
+        }
+    }
+
+    private func logFrontmostMismatch(for app: NSRunningApplication, appName: String, context: String) {
+        let frontmost = NSWorkspace.shared.frontmostApplication
+        let frontmostName = frontmost?.localizedName ?? "Unknown"
+        let frontmostPID = frontmost?.processIdentifier ?? 0
+        delegateLogger.notice(
+            "\(context): target \(appName) (PID: \(app.processIdentifier)); frontmost is \(frontmostName) (PID: \(frontmostPID))"
+        )
     }
 }
