@@ -164,6 +164,9 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
             delegateLogger.notice("Activation failed for: \(appName) (PID: \(app.processIdentifier))")
         }
 
+        // Explicitly raise and focus non-minimized windows that may still be behind others.
+        raiseAndFocusNonMinimizedWindows(forPID: app.processIdentifier)
+
     }
 
     /// Open callback URL directly (used for URL scheme callbacks)
@@ -216,6 +219,57 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                     delegateLogger.notice("Failed to unminimize window (error: \(setResult.rawValue))")
                 }
             }
+        }
+    }
+
+    /// Raise and focus non-minimized windows for a given PID via Accessibility API.
+    private func raiseAndFocusNonMinimizedWindows(forPID pid: pid_t) {
+        guard AXIsProcessTrusted() else {
+            delegateLogger.notice("Accessibility permission not granted, skipping raise/focus")
+            return
+        }
+
+        let appElement = AXUIElementCreateApplication(pid)
+        var windowsRef: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef)
+
+        guard result == .success, let windows = windowsRef as? [AXUIElement] else {
+            delegateLogger.notice("Could not retrieve windows for raise/focus via Accessibility API (error: \(result.rawValue))")
+            return
+        }
+
+        var raisedCount = 0
+        for window in windows {
+            var minimizedRef: CFTypeRef?
+            let minResult = AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &minimizedRef)
+            let isMinimized = (minimizedRef as? NSNumber)?.boolValue ?? false
+
+            guard minResult == .success, !isMinimized else {
+                continue
+            }
+
+            let raiseResult = AXUIElementPerformAction(window, kAXRaiseAction as CFString)
+            if raiseResult == .success {
+                raisedCount += 1
+            } else {
+                delegateLogger.notice("Failed to raise window (error: \(raiseResult.rawValue))")
+            }
+
+            let mainResult = AXUIElementSetAttributeValue(window, kAXMainAttribute as CFString, kCFBooleanTrue)
+            if mainResult != .success {
+                delegateLogger.notice("Failed to mark window as main (error: \(mainResult.rawValue))")
+            }
+
+            let focusResult = AXUIElementSetAttributeValue(window, kAXFocusedAttribute as CFString, kCFBooleanTrue)
+            if focusResult != .success {
+                delegateLogger.notice("Failed to focus window (error: \(focusResult.rawValue))")
+            }
+        }
+
+        if raisedCount > 0 {
+            delegateLogger.notice("Raised/focused \(raisedCount) non-minimized window(s)")
+        } else {
+            delegateLogger.notice("No non-minimized windows were raised/focused")
         }
     }
 }
