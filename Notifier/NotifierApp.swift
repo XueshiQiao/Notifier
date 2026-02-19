@@ -90,7 +90,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let contentView = ContentView()
             let hostingView = NSHostingView(rootView: contentView)
             let createdWindow = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 760),
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 866),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered,
                 defer: false

@@ -27,6 +27,7 @@ struct ContentView: View {
                 Image(systemName: server.isRunning ? "antenna.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
                     .font(.system(size: 60))
                     .foregroundStyle(server.isRunning ? .green : .secondary)
+                    .frame(width: 60, height: 60, alignment: .bottom)
 
                 Text("HTTP Notification Server")
                     .font(.title)
@@ -205,12 +206,10 @@ struct ContentView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 270, alignment: .leading)
             .padding()
             .background(Color.secondary.opacity(0.1))
             .cornerRadius(12)
-
-            Spacer()
 
             // Footer
             VStack(spacing: 6) {
@@ -249,7 +248,7 @@ struct ContentView: View {
             .padding(.bottom, 4)
         }
         .padding()
-        .frame(minWidth: 400, idealWidth: 400, minHeight: 560, idealHeight: 560)
+        .frame(minWidth: 400, idealWidth: 400, minHeight: 660, idealHeight: 660)
         .task {
             await notificationManager.requestAuthorization()
             await updateChecker.startPeriodicChecks()
