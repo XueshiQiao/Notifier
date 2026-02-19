@@ -27,7 +27,6 @@ struct ContentView: View {
                 Image(systemName: server.isRunning ? "antenna.radiowaves.left.and.right" : "antenna.radiowaves.left.and.right.slash")
                     .font(.system(size: 60))
                     .foregroundStyle(server.isRunning ? .green : .secondary)
-                    .symbolEffect(.variableColor, isActive: server.isRunning)
 
                 Text("HTTP Notification Server")
                     .font(.title)

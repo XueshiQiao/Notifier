@@ -15,6 +15,7 @@ class HTTPServer {
     static let shared = HTTPServer()
 
     private let logger = Logger(subsystem: "me.xueshi.Notifier", category: "HTTPServer")
+    private let networkQueue = DispatchQueue(label: "me.xueshi.Notifier.httpserver", qos: .utility)
     private var listener: NWListener?
     private(set) var isRunning = false
     private(set) var statusMessage = "Server not started"
@@ -24,64 +25,82 @@ class HTTPServer {
     
     /// Start the HTTP server
     func start() {
-        guard listener == nil else {
-            statusMessage = "Server already running"
-            return
-        }
-        
-        do {
-            let parameters = NWParameters.tcp
-            parameters.allowLocalEndpointReuse = true
-            
-            listener = try NWListener(using: parameters, on: NWEndpoint.Port(integerLiteral: port))
-            
-            listener?.stateUpdateHandler = { [weak self] state in
-                guard let self = self else { return }
-                
-                switch state {
-                case .ready:
-                    self.isRunning = true
-                    self.statusMessage = "Server running on port \(self.port)"
-                    logger.notice("HTTP Server listening on port \(self.port)")
-                    
-                case .failed(let error):
-                    self.isRunning = false
-                    self.statusMessage = "Server failed: \(error.localizedDescription)"
-                    logger.notice("Server failed: \(error)")
-                    
-                case .cancelled:
-                    self.isRunning = false
-                    self.statusMessage = "Server stopped"
-                    logger.notice("Server cancelled")
-                    
-                default:
-                    break
+        networkQueue.async { [weak self] in
+            guard let self = self else { return }
+            guard self.listener == nil else {
+                DispatchQueue.main.async {
+                    self.statusMessage = "Server already running"
                 }
+                return
             }
-            
-            listener?.newConnectionHandler = { [weak self] connection in
-                self?.handleConnection(connection)
+
+            do {
+                let parameters = NWParameters.tcp
+                parameters.allowLocalEndpointReuse = true
+
+                self.listener = try NWListener(using: parameters, on: NWEndpoint.Port(integerLiteral: self.port))
+
+                self.listener?.stateUpdateHandler = { [weak self] state in
+                    guard let self = self else { return }
+
+                    switch state {
+                    case .ready:
+                        DispatchQueue.main.async {
+                            self.isRunning = true
+                            self.statusMessage = "Server running on port \(self.port)"
+                        }
+                        self.logger.notice("HTTP Server listening on port \(self.port)")
+
+                    case .failed(let error):
+                        DispatchQueue.main.async {
+                            self.isRunning = false
+                            self.statusMessage = "Server failed: \(error.localizedDescription)"
+                        }
+                        self.logger.notice("Server failed: \(error)")
+
+                    case .cancelled:
+                        DispatchQueue.main.async {
+                            self.isRunning = false
+                            self.statusMessage = "Server stopped"
+                        }
+                        self.logger.notice("Server cancelled")
+
+                    default:
+                        break
+                    }
+                }
+
+                self.listener?.newConnectionHandler = { [weak self] connection in
+                    self?.handleConnection(connection)
+                }
+
+                self.listener?.start(queue: self.networkQueue)
+
+            } catch {
+                DispatchQueue.main.async {
+                    self.statusMessage = "Failed to start: \(error.localizedDescription)"
+                }
+                self.logger.notice("Failed to start server: \(error)")
             }
-            
-            listener?.start(queue: .main)
-            
-        } catch {
-            statusMessage = "Failed to start: \(error.localizedDescription)"
-            logger.notice("Failed to start server: \(error)")
         }
     }
     
     /// Stop the HTTP server
     func stop() {
-        listener?.cancel()
-        listener = nil
-        
-        // Close all active connections
-        connections.forEach { $0.cancel() }
-        connections.removeAll()
-        
-        isRunning = false
-        statusMessage = "Server stopped"
+        networkQueue.async { [weak self] in
+            guard let self = self else { return }
+            self.listener?.cancel()
+            self.listener = nil
+
+            // Close all active connections
+            self.connections.forEach { $0.cancel() }
+            self.connections.removeAll()
+        }
+
+        DispatchQueue.main.async {
+            self.isRunning = false
+            self.statusMessage = "Server stopped"
+        }
     }
     
     /// Handle incoming connection
@@ -96,7 +115,7 @@ class HTTPServer {
             }
         }
         
-        connection.start(queue: .main)
+        connection.start(queue: networkQueue)
         receiveRequest(on: connection)
     }
     
