@@ -6,121 +6,115 @@ Get native macOS notifications when Gemini CLI needs your permission or has a qu
 
 - Notifier app running with the HTTP server started
 - [Gemini CLI](https://github.com/google-gemini/gemini-cli) installed
-- Node.js available in your shell
+- Python 3 available in your shell
 
 ## Setup
 
 ### 1. Create the notification script
 
-Save the following script to `~/.gemini/scripts/notify_via_app.js`:
+Save the following script to `~/.gemini/scripts/notify_via_app.py`:
 
-```js
-#!/usr/bin/env node
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+```python
+#!/usr/bin/env python3
+import json
+import os
+import re
+import sys
+import urllib.request
 
-function sendNotification(data) {
-    const postData = JSON.stringify(data);
 
-    const options = {
-        hostname: 'localhost',
-        port: 8000,
-        path: '/',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(postData)
-        }
-    };
+def send_notification(payload):
+    data = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(
+        "http://localhost:8000/",
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=1):
+        pass
 
-    const req = http.request(options, (res) => {
-        res.on('data', () => {});
-    });
 
-    req.on('error', () => {});
+def allow_and_exit():
+    sys.stdout.write(json.dumps({"decision": "allow"}))
 
-    req.write(postData);
-    req.end();
-}
 
-try {
-    const inputData = fs.readFileSync(0, 'utf8');
-    if (!inputData) {
-        process.stdout.write(JSON.stringify({ decision: "allow" }));
-        return;
-    }
+try:
+    input_data = sys.stdin.read()
+    if not input_data:
+        allow_and_exit()
+        raise SystemExit(0)
 
-    let input;
-    try {
-        input = JSON.parse(inputData);
-    } catch (e) {
-        process.stdout.write(JSON.stringify({ decision: "allow" }));
-        return;
-    }
+    try:
+        incoming = json.loads(input_data)
+    except Exception:
+        allow_and_exit()
+        raise SystemExit(0)
 
-    const toolName = input.tool_name;
-    const eventName = input.hook_event_name || "Notification";
+    tool_name = incoming.get("tool_name")
+    event_name = incoming.get("hook_event_name", "Notification")
 
-    let title = "Gemini CLI";
-    let body = "Action Required";
-    let subtitle = "";
-    let shouldNotify = false;
+    title = "Gemini CLI"
+    body = "Action Required"
+    subtitle = ""
+    should_notify = False
 
-    if (eventName === "Notification" && input.notification_type === "ToolPermission") {
-        shouldNotify = true;
-        const details = input.details || {};
-        subtitle = "Permission Requested";
+    if event_name == "Notification" and incoming.get("notification_type") == "ToolPermission":
+        should_notify = True
+        details = incoming.get("details") or {}
+        subtitle = "Permission Requested"
 
-        if (details.command) {
-            body = `Run: ${details.command}`;
-        } else if (details.filePath) {
-            const action = details.type === 'edit' ? 'Edit' : 'Write';
-            body = `${action}: ${path.basename(details.filePath)}`;
-            const dir = path.dirname(details.filePath);
-            if (dir && dir !== '.') {
-                subtitle = dir.replace(process.env.HOME, '~');
-            }
-        } else if (input.message) {
-            body = input.message.replace(/^Tool /, "").replace(/ requires (editing|execution)$/, "");
-        }
-    } else if (toolName === "ask_user") {
-        shouldNotify = true;
-        const questions = input.tool_input?.questions || [];
-        const firstQ = questions[0] || {};
-        body = firstQ.question || "The agent has a question for you.";
-        subtitle = firstQ.header ? `Question: ${firstQ.header}` : "User Choice Requested";
-    }
+        command = details.get("command")
+        file_path = details.get("filePath")
+        message = incoming.get("message")
 
-    if (shouldNotify) {
-        const pidArg = process.argv[2];
-        let pid = null;
-        if (pidArg) {
-            const parsed = parseInt(pidArg, 10);
-            if (!isNaN(parsed)) {
-                pid = parsed;
-            }
-        }
+        if command:
+            body = f"Run: {command}"
+        elif file_path:
+            action = "Edit" if details.get("type") == "edit" else "Write"
+            body = f"{action}: {os.path.basename(file_path)}"
+            directory = os.path.dirname(file_path)
+            if directory and directory != ".":
+                subtitle = directory.replace(os.environ.get("HOME", ""), "~")
+        elif message:
+            body = re.sub(r" requires (editing|execution)$", "", re.sub(r"^Tool ", "", message))
 
-        sendNotification({
-            title: title,
-            body: body,
-            subtitle: subtitle,
-            pid: pid
-        });
-    }
+    elif tool_name == "ask_user":
+        should_notify = True
+        questions = ((incoming.get("tool_input") or {}).get("questions")) or []
+        first_question = questions[0] if questions else {}
+        body = first_question.get("question") or "The agent has a question for you."
+        header = first_question.get("header")
+        subtitle = f"Question: {header}" if header else "User Choice Requested"
 
-} catch (e) {
-    // ignore errors
-} finally {
-    process.stdout.write(JSON.stringify({ decision: "allow" }));
-}
+    if should_notify:
+        pid = None
+        if len(sys.argv) > 1:
+            try:
+                pid = int(sys.argv[1])
+            except ValueError:
+                pid = None
+
+        try:
+            send_notification({
+                "title": title,
+                "body": body,
+                "subtitle": subtitle,
+                "pid": pid
+            })
+        except Exception:
+            pass
+
+except Exception:
+    pass
+
+allow_and_exit()
 ```
 
 Make the script executable:
 
 ```bash
-chmod +x ~/.gemini/scripts/notify_via_app.js
+chmod +x ~/.gemini/scripts/notify_via_app.py
 ```
 
 ### 2. Add hooks to Gemini CLI settings
@@ -137,7 +131,7 @@ Add the following `hooks` section to your `~/.gemini/settings.json`:
           {
             "type": "command",
             "name": "BeforeTool Notification",
-            "command": "~/.gemini/scripts/notify_via_app.js $PPID"
+            "command": "~/.gemini/scripts/notify_via_app.py $PPID"
           }
         ]
       }
@@ -149,7 +143,7 @@ Add the following `hooks` section to your `~/.gemini/settings.json`:
           {
             "type": "command",
             "name": "Notification",
-            "command": "~/.gemini/scripts/notify_via_app.js $PPID"
+            "command": "~/.gemini/scripts/notify_via_app.py $PPID"
           }
         ]
       }

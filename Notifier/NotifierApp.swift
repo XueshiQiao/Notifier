@@ -116,7 +116,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc
     private func checkUpdate() {
         checkUpdateMenuItem?.isEnabled = false
-        checkUpdateMenuItem?.title = "Checking..."
+        checkUpdateMenuItem?.title = "Checking!"
 
         Task { @MainActor in
             await UpdateChecker.shared.checkForUpdate()

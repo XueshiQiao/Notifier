@@ -3,7 +3,7 @@
 A macOS app that routes permission requests from AI agentic code tools to native notifications.
 
 ## Features
-
+- ✅ **Secure**, **local-only with no outbound request**.
 - ✅ ***Native*** experience, built with Swift, SwiftUI
 - ✅ ***Activate the source app*** when clicking the notification banner
 - ✅ Support `callback_url` to open source app directly (takes priority over `pid`)
