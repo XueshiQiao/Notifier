@@ -8,6 +8,7 @@
 import Foundation
 import UserNotifications
 import AppKit
+import CoreGraphics
 import os
 
 /// Handles notification interactions and activates apps based on PID
@@ -147,6 +148,9 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     /// Actually activate the application
     private func activateApplication(_ app: NSRunningApplication, originalPID: Int) {
         let appName = app.localizedName ?? "Unknown"
+        let bundleID = app.bundleIdentifier ?? "Unknown"
+        let axTrusted = AXIsProcessTrusted()
+        delegateLogger.notice("Activation context: app=\(appName) bundle=\(bundleID) pid=\(app.processIdentifier) axTrusted=\(axTrusted)")
 
         // Unhide the app if it's hidden
         if app.isHidden {
@@ -307,16 +311,16 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(150)) { [weak self] in
             guard let self = self else { return }
 
-            if self.isApplicationFrontmost(app) {
-                delegateLogger.notice("App is frontmost after activation attempt \(attempt): \(appName) (PID: \(app.processIdentifier))")
+            if self.isActivationVisiblySuccessful(app) {
+                delegateLogger.notice("Activation attempt \(attempt) reached visible success for: \(appName) (PID: \(app.processIdentifier))")
                 return
             }
 
             self.setAppFrontmostViaAccessibility(forPID: app.processIdentifier)
             self.raiseAndFocusNonMinimizedWindows(forPID: app.processIdentifier)
 
-            if self.isApplicationFrontmost(app) {
-                delegateLogger.notice("App became frontmost after AX actions on attempt \(attempt): \(appName) (PID: \(app.processIdentifier))")
+            if self.isActivationVisiblySuccessful(app) {
+                delegateLogger.notice("AX actions reached visible success on attempt \(attempt): \(appName) (PID: \(app.processIdentifier))")
                 return
             }
 
@@ -354,8 +358,8 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
                 self.setAppFrontmostViaAccessibility(forPID: app.processIdentifier)
                 self.raiseAndFocusNonMinimizedWindows(forPID: app.processIdentifier)
 
-                if self.isApplicationFrontmost(app) {
-                    delegateLogger.notice("App became frontmost after NSWorkspace fallback: \(appName) (PID: \(app.processIdentifier))")
+                if self.isActivationVisiblySuccessful(app) {
+                    delegateLogger.notice("NSWorkspace fallback reached visible success: \(appName) (PID: \(app.processIdentifier))")
                 } else {
                     self.logFrontmostMismatch(for: app, appName: appName, context: "After NSWorkspace fallback")
                 }
@@ -367,8 +371,59 @@ class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         let frontmost = NSWorkspace.shared.frontmostApplication
         let frontmostName = frontmost?.localizedName ?? "Unknown"
         let frontmostPID = frontmost?.processIdentifier ?? 0
+        let visible = hasLikelyVisibleWindow(forPID: app.processIdentifier)
         delegateLogger.notice(
-            "\(context): target \(appName) (PID: \(app.processIdentifier)); frontmost is \(frontmostName) (PID: \(frontmostPID))"
+            "\(context): target \(appName) (PID: \(app.processIdentifier)); frontmost is \(frontmostName) (PID: \(frontmostPID)); targetHasVisibleWindow=\(visible)"
         )
+    }
+
+    /// Success means the app is frontmost and (for regular apps) has a visible window on-screen.
+    private func isActivationVisiblySuccessful(_ app: NSRunningApplication) -> Bool {
+        guard isApplicationFrontmost(app) else {
+            return false
+        }
+
+        // Accessory/background apps may not own a regular app window.
+        guard app.activationPolicy == .regular else {
+            return true
+        }
+
+        return hasLikelyVisibleWindow(forPID: app.processIdentifier)
+    }
+
+    /// Heuristic based on CoreGraphics window list; does not depend on Accessibility permission.
+    private func hasLikelyVisibleWindow(forPID pid: pid_t) -> Bool {
+        guard let raw = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+                as? [[String: Any]] else {
+            delegateLogger.notice("Could not query on-screen windows for PID \(pid)")
+            return false
+        }
+
+        for info in raw {
+            guard let owner = info[kCGWindowOwnerPID as String] as? NSNumber,
+                  owner.int32Value == pid else {
+                continue
+            }
+
+            let layer = (info[kCGWindowLayer as String] as? NSNumber)?.intValue ?? 0
+            if layer != 0 {
+                continue
+            }
+
+            let alpha = (info[kCGWindowAlpha as String] as? NSNumber)?.doubleValue ?? 1.0
+            if alpha <= 0.01 {
+                continue
+            }
+
+            if let boundsDict = info[kCGWindowBounds as String] as? NSDictionary,
+               let bounds = CGRect(dictionaryRepresentation: boundsDict),
+               (bounds.width < 2 || bounds.height < 2) {
+                continue
+            }
+
+            return true
+        }
+
+        return false
     }
 }
