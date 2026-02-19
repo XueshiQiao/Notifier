@@ -162,11 +162,38 @@ jobs:
           name: Notifier.dmg
           path: ${{ runner.temp }}/Notifier.dmg
 
+      - name: Generate latest.json (Tauri format)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/Notifier.dmg"
+
+          cat > "$RUNNER_TEMP/latest.json" <<EOF
+          {
+            "version": "$VERSION",
+            "notes": "",
+            "pub_date": "$PUB_DATE",
+            "platforms": {
+              "darwin-aarch64": {
+                "signature": "",
+                "url": "$DOWNLOAD_URL"
+              },
+              "darwin-x86_64": {
+                "signature": "",
+                "url": "$DOWNLOAD_URL"
+              }
+            }
+          }
+          EOF
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ runner.temp }}/Notifier.dmg
+          files: |
+            ${{ runner.temp }}/Notifier.dmg
+            ${{ runner.temp }}/latest.json
           generate_release_notes: true
 
       - name: Cleanup keychain

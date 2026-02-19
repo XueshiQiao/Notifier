@@ -14,7 +14,7 @@ class UpdateChecker {
     var latestVersion: String?
     var isChecking = false
 
-    private let versionURL = URL(string: "https://raw.githubusercontent.com/XueshiQiao/Notifier/main/version.json")!
+    private let versionURL = URL(string: "https://github.com/XueshiQiao/Notifier/releases/latest/download/latest.json")!
     private let checkInterval: TimeInterval = 3600 // 1 hour
 
     private init() {}
@@ -66,6 +66,19 @@ class UpdateChecker {
 
 private struct VersionManifest: Decodable {
     let version: String
-    let download_url: String
-    let release_notes: String
+    let notes: String?
+    let pubDate: String?
+    let platforms: [String: PlatformManifest]?
+
+    enum CodingKeys: String, CodingKey {
+        case version
+        case notes
+        case pubDate = "pub_date"
+        case platforms
+    }
+}
+
+private struct PlatformManifest: Decodable {
+    let signature: String?
+    let url: String
 }
