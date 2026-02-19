@@ -145,7 +145,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func startMenuRefreshTimer() {
         menuRefreshTimer?.invalidate()
         menuRefreshTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.refreshMenuItems()
+            DispatchQueue.main.async { [weak self] in
+                self?.refreshMenuItems()
+            }
         }
     }
 
