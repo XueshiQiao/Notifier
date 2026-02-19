@@ -1,5 +1,5 @@
 {
-    "version": "1.1.2",
+    "version": "1.1.3",
     "download_url": "https://github.com/XueshiQiao/Notifier/releases/latest",
-    "release_notes": "Reduced CPU usage by moving HTTP server networking off the main thread and removing always-on header animation."
+    "release_notes": "Added in-app Claude/Gemini patch integration workflow with safe backups, Python-based Gemini hook script, improved confirmation/results alerts, and refined window/usage panel behavior."
 }
