@@ -15,23 +15,23 @@
 		D4235BD72F423ACF00BA16C6 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		D4235BEC2F423CC000BA16C6 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		D4235C012F42D04F00BA16C6 /* Notifier.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Notifier.entitlements; sourceTree = "<group>"; };
-		D4235C072F42D2A200BA16C6 /* Notifier.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Notifier.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D4235C072F42D2A200BA16C6 /* Notifier.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = Notifier.app; path = /Users/joey/Code/Notifier/build/Debug/Notifier.app; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		D4235C082F42CBCA00BA16C6 /* Exceptions for "Notifier" folder in "Notifier" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = D4235BC82F42393E00BA16C6 /* Notifier */;
-		};
 		D4235BFB2F42CBCA00BA16C6 /* Exceptions for "scripts" folder in "Notifier" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				test_pid_activation.sh,
 				test_server.py,
 				test_server.sh,
+			);
+			target = D4235BC82F42393E00BA16C6 /* Notifier */;
+		};
+		D4235C082F42CBCA00BA16C6 /* Exceptions for "Notifier" folder in "Notifier" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
 			);
 			target = D4235BC82F42393E00BA16C6 /* Notifier */;
 		};
@@ -88,7 +88,6 @@
 		D4235BCA2F42393E00BA16C6 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				D4235C072F42D2A200BA16C6 /* Notifier.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -314,7 +313,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Notifier/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Notifier;
+				INFOPLIST_KEY_CFBundleDisplayName = "Notifier Local";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -322,7 +321,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.1.4;
-				PRODUCT_BUNDLE_IDENTIFIER = me.xueshi.Notifier;
+				PRODUCT_BUNDLE_IDENTIFIER = me.xueshi.Notifier.local;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
