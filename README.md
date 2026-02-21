@@ -14,7 +14,7 @@ A macOS app that routes permission requests from AI agentic code tools to native
 
 ## Screenshot
 ![App Screenshot](docs/screenshot_01.png)
-
+![App Screenshot](docs/screenshot_02.png)
 ## Requirements
 
 - macOS 13.0 or later
