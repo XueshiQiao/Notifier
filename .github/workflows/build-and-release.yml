@@ -200,3 +200,12 @@ jobs:
         if: always()
         run: |
           security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+
+      - name: Trigger Apps Gallery Update
+        if: success()
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GALLERY_UPDATE_PAT }}
+          repository: XueshiQiao/apps_gallery
+          event-type: app_released
+
